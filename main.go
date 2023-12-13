@@ -1,13 +1,13 @@
 package main
 
 import (
-	"strconv"
 	"strings"
     "encoding/json"
     "fmt"
     "gofr.dev/pkg/gofr"
 	"go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson"
     "log"
 	"context"
 )
@@ -23,7 +23,6 @@ func main() {
 	clientOptions := options.Client().ApplyURI("mongodb+srv://ronakkumbhat8:password1234@cluster0.krmii7s.mongodb.net/")
 	 // Connect to MongoDB
 	 client, err := mongo.Connect(context.TODO(), clientOptions)
-    collection := client.Database("test").Collection("books")
 
 	 if err != nil {
 		 log.Fatal(err)
@@ -38,14 +37,14 @@ func main() {
  
 	 fmt.Println("Connected to MongoDB!")
  
-	// register route greet
 	app.GET("/addbook", func(ctx *gofr.Context) (interface{}, error) {
 		var book Book
+		book.Status="new"
 		err := json.NewDecoder(ctx.Request().Body).Decode(&book)
 		if err != nil {
 			return nil, err
 		}
-	
+		collection := client.Database("test").Collection("books")
 		// Insert the book into the collection
 		insertResult, err := collection.InsertOne(context.TODO(), book)
 		if err != nil {
@@ -53,48 +52,71 @@ func main() {
 		}
 	
 		fmt.Println("Inserted a single document: ", insertResult.InsertedID)
-		return "Book inserted with ID: " + insertResult.InsertedID.(primitive.ObjectID).Hex(), nil
+		return "Book inserted" , nil
 	})
 	app.GET("/updatestatus", func(ctx *gofr.Context) (interface{}, error) {
-		// Get data from request body
-		var requestData struct {
-			Name string `json:"Name"`
-			Status string `json:"Status"`
+		collection := client.Database("test").Collection("books")
+		var book Book
+		err := json.NewDecoder(ctx.Request().Body).Decode(&book)
+		if err != nil {
+			return nil, err
 		}
-
-		// Use json.NewDecoder to decode the request body into requestData
-		err := json.NewDecoder(ctx.Request().Body).Decode(&requestData)
+	
+		// Create a filter to find the book by name
+		filter := bson.D{{"name", book.Name}}
+	
+		// Create an update to set the status of the book
+		update := bson.D{{"$set", bson.D{{"status", book.Status}}}}
+	
+		// Update the book in the collection
+		updateResult, err := collection.UpdateOne(context.TODO(), filter, update)
+		if err != nil {
+			return nil, err
+		}
+	
+		// Return the result of the update operation
+		return updateResult, nil
+	})
+	app.GET("/getstatus", func(ctx *gofr.Context) (interface{}, error) {
+		collection := client.Database("test").Collection("books")
+		var book Book
+		err := json.NewDecoder(ctx.Request().Body).Decode(&book)
 		if err != nil {
 			return nil, err
 		}
 
-		var tempbooks []string
-		if(requestData.Status == "returned"){
-			books = append(books, requestData.Name)
-		}else if(requestData.Status == "borrowed"){
-			for i := 0; i < len(books); i++ {
-				if(books[i] != requestData.Name){
-					tempbooks = append(tempbooks, books[i])
-				}
-			}
-			books = tempbooks
-		}else if(requestData.Status == "lost"){
-			for i := 0; i < len(books); i++ {
-				if(books[i] != requestData.Name){
-					tempbooks = append(tempbooks, books[i])
-				}
-			}
-			books = tempbooks
-		}else{
-			fmt.Println("invalid", books, requestData)
-		
+		// Create a filter to find the book by name
+		filter := bson.D{{"name", book.Name}}
+
+		// Find the book in the collection
+		err = collection.FindOne(context.TODO(), filter).Decode(&book)
+		if err != nil {
+			return nil, err
 		}
-		return "Hello " + strconv.Itoa(len(books)),nil
+
+		// Return the status of the book
+		return book.Status, nil
+			return "Hello " + strings.Join(books, ", "), nil
 	})
-	app.GET("/getstatus", func(ctx *gofr.Context) (interface{}, error) {
-		return "Hello " + strings.Join(books, ", "), nil
+	app.DELETE("/deletebook", func(ctx *gofr.Context) (interface{}, error) {
+		collection := client.Database("test").Collection("books")
+		var book Book
+		err := json.NewDecoder(ctx.Request().Body).Decode(&book)
+		if err != nil {
+			return nil, err
+		}
+	
+		// Create a filter to find the book by name
+		filter := bson.D{{"name", book.Name}}
+	
+		// Delete the book from the collection
+		deleteResult, err := collection.DeleteOne(context.TODO(), filter)
+		if err != nil {
+			return nil, err
+		}
+	
+		// Return the result of the delete operation
+		return deleteResult, nil
 	})
-	// Starts the server, it will listen on the default port 8000.
-	// it can be over-ridden through configs
 	app.Start()
 }
