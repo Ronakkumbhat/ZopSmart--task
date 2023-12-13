@@ -2,38 +2,58 @@ package main
 
 import (
 	"strconv"
+	"strings"
     "encoding/json"
     "fmt"
     "gofr.dev/pkg/gofr"
+	"go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
+    "log"
+	"context"
 )
-
 func main() {
 	// initialise gofr object
 	app := gofr.New()
 	var books []string
+	type Book struct {
+		Name   string `json:"name"`
+		Status string `json:"status"`
+	}
 
+	clientOptions := options.Client().ApplyURI("mongodb+srv://ronakkumbhat8:password1234@cluster0.krmii7s.mongodb.net/")
+	 // Connect to MongoDB
+	 client, err := mongo.Connect(context.TODO(), clientOptions)
+    collection := client.Database("test").Collection("books")
+
+	 if err != nil {
+		 log.Fatal(err)
+	 }
+ 
+	 // Check the connection
+	 err = client.Ping(context.TODO(), nil)
+ 
+	 if err != nil {
+		 log.Fatal(err)
+	 }
+ 
+	 fmt.Println("Connected to MongoDB!")
+ 
 	// register route greet
 	app.GET("/addbook", func(ctx *gofr.Context) (interface{}, error) {
-		// Get data from request body
-		var requestData struct {
-			Name string `json:"Name"`
-		}
-
-		// Use json.NewDecoder to decode the request body into requestData
-		err := json.NewDecoder(ctx.Request().Body).Decode(&requestData)
+		var book Book
+		err := json.NewDecoder(ctx.Request().Body).Decode(&book)
 		if err != nil {
 			return nil, err
 		}
-
-		// Insert the value into the array
-		books = append(books, requestData.Name)
-		// Access the data
-		fmt.Println("Hello", books)
-
-		// Get the last element of the slice
-		lastBook := books[len(books)-1]
-
-		return "Hello " + lastBook,nil
+	
+		// Insert the book into the collection
+		insertResult, err := collection.InsertOne(context.TODO(), book)
+		if err != nil {
+			return nil, err
+		}
+	
+		fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+		return "Book inserted with ID: " + insertResult.InsertedID.(primitive.ObjectID).Hex(), nil
 	})
 	app.GET("/updatestatus", func(ctx *gofr.Context) (interface{}, error) {
 		// Get data from request body
@@ -70,6 +90,9 @@ func main() {
 		
 		}
 		return "Hello " + strconv.Itoa(len(books)),nil
+	})
+	app.GET("/getstatus", func(ctx *gofr.Context) (interface{}, error) {
+		return "Hello " + strings.Join(books, ", "), nil
 	})
 	// Starts the server, it will listen on the default port 8000.
 	// it can be over-ridden through configs
