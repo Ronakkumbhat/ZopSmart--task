@@ -12,6 +12,7 @@ https://www.postman.com/joint-operations-observer-83521299/workspace/zopsmart-ta
   - [Installation](#installation)
 - [Usage](#usage)
 - [Postman Screenshots](#postman-screenshots)
+-  [System design](#System-Design-for-basic-Library-management-system)
 
 ## Getting Started
 
@@ -86,5 +87,8 @@ step-by-step instructions on how to install and set up.
 3. Send the request.
 
   ![image](https://github.com/Ronakkumbhat/ZopSmart--task/assets/91602958/b5448a0c-5a0a-471c-a2b3-b9cb741c8438)
+
+### System Design for basic Library management system
+![image](https://github.com/Ronakkumbhat/ZopSmart--task/assets/91602958/0ca590f2-c41f-4314-96d4-d1415e3a62e6)
 
 
