@@ -23,7 +23,7 @@ Welcome to LMS, your go-to application for managing and tracking your Books effo
 
 - [Go](https://golang.org/) (Programming Language)
 - [GoFr](https://gofr.dev/) (Framework)
-- [MySQL](https://www.mysql.com/) (or any preferred database)
+- MongoDB(or any preferred database)
 - [Git](https://git-scm.com/) (Version Control System)
 
 
